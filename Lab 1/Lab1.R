@@ -110,3 +110,5 @@ par(col.axis=1)
 qqnorm(EPILand,col=6,lwd=2)
 qqline(EPILand,lwd=2, col="red") 
 
+
+#----Lab 1 Pt 2
