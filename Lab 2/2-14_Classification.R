@@ -71,7 +71,6 @@ summary(abalone$rings)
 aba <-abalone
 aba$sex <-NULL
 
-
 normalize <- function(x){
   return ((x - min(x)) / (max(x) - min(x)))
 }
@@ -86,6 +85,8 @@ sqrt(2918)
 
 #sqrt(2918) ~= 54.01852
 library(class)
+
+length(KNNtrain) 
 
 KNNpred <- knn(train = KNNtrain[1:7],test=KNNtest[1:7],cl = KNNtrain$rings,k=55)
 KNNpred
