@@ -30,6 +30,7 @@ image(1:10,1:40,t(dataM)[,nrow(dataM):1])
 heatmap(dataM)
 
 ?hclust
+
 #----Clusters----
 hh <- hclust(dist(dataM))
 

@@ -56,7 +56,7 @@ qqline(data_epi_xls$EPI,lwd=4, col="#663399")
 x<-seq(30,95,1)
 qqplot(qt(ppoints(250),df=5),x,xlab="Q-Q plot for t dsn",col='#abcdef')
 qqline(x)
-
+?ppoints
  #..........................#
  ## Fitting a Distribution ##
  #..........................#
@@ -110,5 +110,18 @@ par(col.axis=1)
 qqnorm(EPILand,col=6,lwd=2)
 qqline(EPILand,lwd=2, col="red") 
 
+#----DF----
+#Cumulative Density Function
+plot(ecdf(EPI), do.points=FALSE, verticals=TRUE) 
+#Quantile-Quantile?
+par(pty="s") 
+qqnorm(EPI); qqline(EPI)
+#Simulated data from t-distribution:
+x <- rt(250, df = 5)
+qqnorm(x); qqline(x)
+#Make a Q-Q plot against the generating distribution by: x<-seq(30,95,1)
+qqplot(qt(ppoints(250), df = 5), x, xlab = "Q-Q plot for t dsn")
+qqline(x)
 
-#----Lab 1 Pt 2
+help(distributions)
+# try different ones.....
