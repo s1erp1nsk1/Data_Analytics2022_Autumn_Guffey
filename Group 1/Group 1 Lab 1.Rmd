@@ -1,0 +1,25 @@
+---
+title: "Group 1 Lab 1"
+output: html_notebook
+---
+
+Lab 1 crtree
+
+```{r}
+#
+```
+
+
+Lab 1 dr
+
+
+
+Lab 1 knn
+
+Lab 1 mds
+
+Lab 1 random forest & rpart
+
+Lab 1 svm
+
+

@@ -27,6 +27,8 @@ dim(Hitters)
 is.na(Hitters)
 
 hd <-na.omit(Hitters)
+
+
 dim(hd)
 glimpse(hd)
 head(hd)
@@ -44,3 +46,5 @@ infl_names
 
 outliers <- hd[infl_names,]
 hd_out_rm <- hd %>% anti_join(outliers)
+
+
