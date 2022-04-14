@@ -1,0 +1,511 @@
+---
+title: "Group 3 Lab 4"
+output: group3_lab4
+---
+
+Lab 4 Bagging
+
+```{r}
+# Data Vehicle (four classes)
+library(ipred)
+library(rpart)
+library(mlbench)
+data(Vehicle)
+l <- length(Vehicle[,1])
+sub <- sample(1:l,2*l/3)
+Vehicle.bagging <- bagging(Class ~.,data=Vehicle[sub, ],mfinal=40, 
+	control=rpart.control(maxdepth=5))
+Vehicle.bagging.pred <- predict.bagging(Vehicle.bagging,newdata=Vehicle[-sub, ])
+Vehicle.bagging.pred$confusion
+Vehicle.bagging.pred$error
+
+
+```
+
+Lab 4 Boosting
+
+```{r}
+require(ggplot2)        # or load package first
+data(diamonds)
+head(diamonds)          # look at the data!
+#
+ggplot(diamonds, aes(clarity, fill=cut)) + geom_bar()
+ggplot(diamonds, aes(clarity)) + geom_bar() + facet_wrap(~ cut)
+ggplot(diamonds) + geom_histogram(aes(x=price)) + geom_vline(xintercept=12000)
+ggplot(diamonds, aes(clarity)) + geom_freqpoly(aes(group = cut, colour = cut))
+
+diamonds$Expensive <- ifelse(diamonds$price >= 12000,1,0)
+head(diamonds)
+
+diamonds$price<-NULL
+require(glmnet)         # or load package first
+x<-model.matrix(~., diamonds[,-ncol(diamonds)])
+y<-as.matrix(diamonds$Expensive)
+mglmnet<-glmnet(x=x,y=y,family="binomial")
+plot(mglmnet)
+
+set.seed(51559)
+sample(1:10)
+require(rpart)
+mTree<-rpart(Expensive~.,data=diamonds)
+plot(mTree)
+text(mTree)
+
+require(boot)
+mean(diamonds$carat)
+ds(diamonds$carat)
+boot.mean<-function(x,i)
+{
+        mean(x[i])
+}
+boot(data=diamonds$carat, statistic=boot.mean,R=120)
+
+```
+
+
+```{r}
+
+library( MASS )
+
+data( birthwt )
+data( VA )
+data( iris )
+data( fgl )
+data( cpus )
+data( housing )
+
+set.seed( 20090417 )
+
+
+bMod <- gbm( low ~ ., data=birthwt,
+             n.tree=1000, shrinkage=.01, cv.folds=5,
+            verbose = FALSE, n.cores=1)
+bMod
+
+bwt <- birthwt
+bwt <- bwt[ sample( 1:nrow( bwt ) ),]
+aMod <- gbm( low ~ ., data=bwt, distribution="adaboost",
+             n.trees=1000, shrinkage=.01, cv.folds=10,
+        train.fraction=.9, verbose = FALSE , n.cores=1)
+aMod
+
+cMod <- gbm( Surv( stime, status ) ~ treat + age + Karn + diag.time + cell + prior,
+             data = VA, n.tree = 1000, shrinkage=.1, cv.folds = 5,
+            verbose = FALSE, n.cores=1)
+cMod
+
+kMod <- gbm( Species ~ . , data=iris , n.tree=1000, shrinkage=.1,
+             cv.folds=5, train.fraction=.9, n.cores=1 )
+kMod
+
+kMod2 <- gbm( type ~ ., data=fgl, n.tree=1000, shrinkage=.01,
+              cv.folds=5, n.cores=1 )
+kMod2
+
+mycpus <- cpus
+mycpus <- mycpus[, -1 ]
+gMod <- gbm( log( perf ) ~ ., data = mycpus, distribution="gaussian",
+             cv.folds=5, n.trees=1000, shrinkage=.01,
+            verbose = FALSE, n.cores=1)
+gMod
+
+biMod <- gbm( log(perf) ~ ., data=mycpus,
+              cv.folds=5, n.trees=1000, shrinkage=.01, n.cores=1 )
+biMod
+
+tMod <- gbm( log(perf) ~ ., data=mycpus, distribution="tdist",
+             cv.folds=5, n.trees=1000, shrinkage=.01,
+        interaction.depth= 3, n.cores=1)
+tMod
+
+lMod <- gbm( log(perf) ~ ., data=mycpus, distribution="laplace",
+             cv.folds=5, n.trees=1000, shrinkage=.01,
+        interaction.depth= 3, n.cores=1)
+lMod
+
+qMod <- gbm( log(perf) ~ ., data=mycpus,
+             distribution=list(name="quantile", alpha=.7 ),
+             cv.folds=5, n.trees=1000, shrinkage=.01,
+        interaction.depth= 3, verbose = FALSE, n.cores=1)
+qMod
+
+pMod <- gbm( Freq ~ ., data=housing , distribution="poisson",
+             n.trees=1000, cv.folds=5 , shrinkage=.01,
+        interaction.depth = 3, n.cores=1)
+pMod
+
+```
+
+
+```{r}
+N <- 1000
+X1 <- runif(N)
+X2 <- 2*runif(N)
+X3 <- ordered(sample(letters[1:4],N,replace=TRUE),levels=letters[4:1])
+X4 <- factor(sample(letters[1:6],N,replace=TRUE))
+X5 <- factor(sample(letters[1:3],N,replace=TRUE))
+X6 <- 3*runif(N) 
+mu <- c(-1,0,1,2)[as.numeric(X3)]
+
+SNR <- 10 # signal-to-noise ratio
+Y <- X1**1.5 + 2 * (X2**.5) + mu
+sigma <- sqrt(var(Y)/SNR)
+Y <- Y + rnorm(N,0,sigma)
+
+# introduce some missing values
+X1[sample(1:N,size=500)] <- NA
+X4[sample(1:N,size=300)] <- NA
+
+data <- data.frame(Y=Y,X1=X1,X2=X2,X3=X3,X4=X4,X5=X5,X6=X6)
+
+# fit initial model
+gbm1 <-
+gbm(Y~X1+X2+X3+X4+X5+X6,         # formula
+    data=data,                   # dataset
+    var.monotone=c(0,0,0,0,0,0), # -1: monotone decrease,
+                                 # +1: monotone increase,
+                                 #  0: no monotone restrictions
+    distribution="gaussian",     # see the help for other choices
+    n.trees=1000,                # number of trees
+    shrinkage=0.05,              # shrinkage or learning rate,
+                                 # 0.001 to 0.1 usually work
+    interaction.depth=3,         # 1: additive model, 2: two-way interactions, etc.
+    bag.fraction = 0.5,          # subsampling fraction, 0.5 is probably best
+    train.fraction = 0.5,        # fraction of data for training,
+                                 # first train.fraction*N used for training
+    n.minobsinnode = 10,         # minimum total weight needed in each node
+    cv.folds = 3,                # do 3-fold cross-validation
+    keep.data=TRUE,              # keep a copy of the dataset with the object
+    verbose=FALSE,               # don't print out progress
+    n.cores=1)                   # use only a single core (detecting #cores is
+                                 # error-prone, so avoided here)
+
+# check performance using an out-of-bag estimator
+# OOB underestimates the optimal number of iterations
+best.iter <- gbm.perf(gbm1,method="OOB")
+print(best.iter)
+
+# check performance using a 50% heldout test set
+best.iter <- gbm.perf(gbm1,method="test")
+print(best.iter)
+
+# check performance using 5-fold cross-validation
+best.iter <- gbm.perf(gbm1,method="cv")
+print(best.iter)
+
+# plot the performance # plot variable influence
+summary(gbm1,n.trees=1)         # based on the first tree
+summary(gbm1,n.trees=best.iter) # based on the estimated best number of trees
+
+# compactly print the first and last trees for curiosity
+print(pretty.gbm.tree(gbm1,1))
+print(pretty.gbm.tree(gbm1,gbm1$n.trees))
+
+# make some new data
+N <- 1000
+X1 <- runif(N)
+X2 <- 2*runif(N)
+X3 <- ordered(sample(letters[1:4],N,replace=TRUE))
+X4 <- factor(sample(letters[1:6],N,replace=TRUE))
+X5 <- factor(sample(letters[1:3],N,replace=TRUE))
+X6 <- 3*runif(N) 
+mu <- c(-1,0,1,2)[as.numeric(X3)]
+
+Y <- X1**1.5 + 2 * (X2**.5) + mu + rnorm(N,0,sigma)
+
+data2 <- data.frame(Y=Y,X1=X1,X2=X2,X3=X3,X4=X4,X5=X5,X6=X6)
+
+# predict on the new data using "best" number of trees
+# f.predict generally will be on the canonical scale (logit,log,etc.)
+f.predict <- predict(gbm1,data2,best.iter)
+
+# least squares error
+print(sum((data2$Y-f.predict)^2))
+
+# create marginal plots
+# plot variable X1,X2,X3 after "best" iterations
+par(mfrow=c(1,3))
+plot(gbm1,1,best.iter)
+plot(gbm1,2,best.iter)
+plot(gbm1,3,best.iter)
+par(mfrow=c(1,1))
+# contour plot of variables 1 and 2 after "best" iterations
+plot(gbm1,1:2,best.iter)
+# lattice plot of variables 2 and 3
+plot(gbm1,2:3,best.iter)
+# lattice plot of variables 3 and 4
+plot(gbm1,3:4,best.iter)
+
+# 3-way plots
+plot(gbm1,c(1,2,6),best.iter,cont=20)
+plot(gbm1,1:3,best.iter)
+plot(gbm1,2:4,best.iter)
+plot(gbm1,3:5,best.iter)
+
+# do another 100 iterations
+gbm2 <- gbm.more(gbm1,100,
+                 verbose=FALSE) # stop printing detailed progress
+
+```
+
+
+Lab 4 Boostrapping
+```{r}
+library(mlbench)
+data(BreastCancer)
+l <- length(BreastCancer[,1])
+sub <- sample(1:l,2*l/3)
+BC.bagging <- bagging(Class ~., data=BreastCancer[,-1], mfinal=20, control=rpart.control(maxdepth=3))
+BC.bagging.pred <-predict.bagging( BC.bagging, newdata=BreastCancer[-sub,-1])
+BC.bagging.pred$confusion
+# vary mfinal and maxdepth, compare
+# change sampling?
+
+```
+
+
+```{r}
+library(ipred)
+data(Ozone)
+l <- length(Ozone[,1])
+sub <- sample(1:l,2*l/3)
+OZ.bagging <- bagging(V4 ~., data=Ozone[,-1], mfinal=30, control=rpart.control(maxdepth=5))
+OZ.bagging.pred <-predict.bagging( OZ.bagging, newdata=Ozone[-sub,-4])
+OZ.bagging.pred$confusion
+
+
+```
+
+
+```{r}
+library(ipred)
+library("MASS")
+library("survival")
+
+# Classification: Breast Cancer data
+
+data("BreastCancer", package = "mlbench")
+
+# Test set error bagging (nbagg = 50): 3.7% (Breiman, 1998, Table 5)
+
+mod <- bagging(Class ~ Cl.thickness + Cell.size
+                + Cell.shape + Marg.adhesion   
+                + Epith.c.size + Bare.nuclei   
+                + Bl.cromatin + Normal.nucleoli
+                + Mitoses, data=BreastCancer, coob=TRUE)
+print(mod)
+
+# Test set error bagging (nbagg=50): 7.9% (Breiman, 1996a, Table 2)
+data("Ionosphere", package = "mlbench")
+Ionosphere$V2 <- NULL # constant within groups
+
+bagging(Class ~ ., data=Ionosphere, coob=TRUE)
+
+# Double-Bagging: combine LDA and classification trees
+
+# predict returns the linear discriminant values, i.e. linear combinations
+# of the original predictors
+
+comb.lda <- list(list(model=lda, predict=function(obj, newdata)
+                                 predict(obj, newdata)$x))
+
+# Note: out-of-bag estimator is not available in this situation, use
+# errorest
+
+mod <- bagging(Class ~ ., data=Ionosphere, comb=comb.lda) 
+
+predict(mod, Ionosphere[1:10,])
+
+# Regression:
+
+data("BostonHousing", package = "mlbench")
+
+# Test set error (nbagg=25, trees pruned): 3.41 (Breiman, 1996a, Table 8)
+
+mod <- bagging(medv ~ ., data=BostonHousing, coob=TRUE)
+print(mod)
+
+library("mlbench")
+learn <- as.data.frame(mlbench.friedman1(200))
+
+# Test set error (nbagg=25, trees pruned): 2.47 (Breiman, 1996a, Table 8)
+
+mod <- bagging(y ~ ., data=learn, coob=TRUE)
+print(mod)
+
+# Survival data
+
+# Brier score for censored data estimated by 
+# 10 times 10-fold cross-validation: 0.2 (Hothorn et al,
+# 2002)
+
+data("DLBCL", package = "ipred")
+mod <- bagging(Surv(time,cens) ~ MGEc.1 + MGEc.2 + MGEc.3 + MGEc.4 + MGEc.5 +
+                                 MGEc.6 + MGEc.7 + MGEc.8 + MGEc.9 +
+                                 MGEc.10 + IPI, data=DLBCL, coob=TRUE)
+
+print(mod)
+
+```
+
+
+```{r}
+library(fpc)
+cbi1<-clusterboot(iris[,-5],B=100, distances=(class(iris[,-5])=="dist"),
+            bootmethod="boot",
+            bscompare=TRUE, 
+            multipleboot=FALSE,
+            jittertuning=0.05, noisetuning=c(0.05,4),
+            subtuning=floor(nrow(iris)/2),
+            clustermethod=kmeansCBI,noisemethod=FALSE,count=TRUE,
+            showplots=FALSE,dissolution=0.5, krange=5,
+            recover=0.75,seed=NULL)
+
+print(cbi1) 
+
+plot(cbi1)
+# vary params
+
+
+```
+
+
+```{r}
+library(fpc)
+  options(digits=3)
+  set.seed(20000)
+  face <- rFace(50,dMoNo=2,dNoEy=0,p=2)
+  cf1 <- clusterboot(face,B=3,bootmethod=
+          c("boot","noise","jitter"),clustermethod=kmeansCBI,
+          krange=5,seed=15555)
+
+  print(cf1)
+  plot(cf1)
+
+
+  cf2 <- clusterboot(dist(face),B=3,bootmethod=
+          "subset",clustermethod=disthclustCBI,
+          k=5, cut="number", method="average", showplots=TRUE, seed=15555)
+  print(cf2)
+
+```
+
+
+Lab 4 GAM
+```{r}
+library(mboost)
+library(TH.data)
+?mboost_fit
+data(bodyfat)
+head(bodyfat)
+tail(bodyfat)
+summary(bodyfat)
+boxplot(bodyfat)
+#
+lm1 <- lm(DEXfat ~ hipcirc + kneebreadth + anthro3a, data = bodyfat)
+coef(lm1)
+## Estimate same model by glmboost
+glm1 <- glmboost(DEXfat ~ hipcirc + kneebreadth + anthro3a, data = bodyfat)
+coef(glm1, off2int=TRUE) ## off2int adds the offset to the intercept
+# We consider all available variables as potential predictors. 
+glm2 <- glmboost(DEXfat ~ ., data = bodyfat)
+# or one could essentially call:
+preds <- names(bodyfat[, names(bodyfat) != "DEXfat"]) ## names of predictors
+fm <- as.formula(paste("DEXfat ~", paste(preds, collapse = "+"))) ## build formula
+# take a look
+fm
+
+#
+coef(glm2, which = "") ## with which = "" we select all.
+plot(glm2, off2int = TRUE) ## default plot, offset added to intercept
+## now change ylim to the range of the coefficients without intercept (zoom-in)
+plot(glm2, ylim = range(coef(glm2, which = preds)))
+
+# try these again with different parameters
+## initial number of boosting iterations. Default: 100
+## step length. Default: 0.1
+boost_control(mstop = 200, nu = 0.05, trace = TRUE) ## print status information? Default: FALSE
+
+
+# examine the learners
+
+z <- factor(1:3)
+extract(bols(z))
+
+gam1 <- gamboost(DEXfat ~ bbs(hipcirc) + bbs(kneebreadth) + bbs(anthro3a),data = bodyfat)
+#Using plot() on a gamboost object delivers automatically the partial eﬀects of the diﬀerent base-learners:
+par(mfrow = c(1,3)) ## 3 plots in one device
+plot(gam1) ## get the partial effects
+# and prevent overfitting
+
+gam2 <- gamboost(DEXfat ~ ., baselearner = "bbs", data = bodyfat,control = boost_control(trace = TRUE))
+set.seed(123) ## set seed to make results reproducible
+cvm <- cvrisk(gam2) ## default method is 25-fold bootstrap cross-validation
+## if package ’multicore’ is not available this will trigger a warning
+# look at output
+cvm
+# set plot window back
+par(mfrow = c(1,1))
+plot(cvm)
+
+mstop(cvm) ## extract the optimal mstop
+gam2[ mstop(cvm) ] ## set the model automatically to the optimal mstop
+# We have now reduced the model of the object gam2 to the one with only 30 boosting iterations, without further assignment. 
+# However, as pointed out above, the other iterations are not lost. To check which variables are now included in the additive predictor we again use the function coef():
+names(coef(gam2)) ## displays the selected base-learners at iteration 30
+## To see that nothing got lost we now increase mstop to 1000:
+gam2[1000, return = FALSE] # return = FALSE just supresses "print(gam2)"
+
+names(coef(gam2)) ## displays the selected base-learners, now at iteration 1000
+
+glm3 <- glmboost(DEXfat ~ hipcirc + kneebreadth + anthro3a, data = bodyfat,family = QuantReg(tau = 0.5), control = boost_control(mstop = 500))
+coef(glm3, off2int = TRUE)
+
+
+```
+
+
+```{r}
+library(mboost)
+data(cars)
+### a simple two-dimensional example: cars data
+cars.gb <- gamboost(dist ~ speed, data = cars, dfbase = 4, control = boost_control(mstop = 50))
+cars.gb
+AIC(cars.gb, method = "corrected")
+ 
+### plot fit for mstop = 1, ..., 50
+plot(dist ~ speed, data = cars)
+tmp <- sapply(1:mstop(AIC(cars.gb)), function(i)
+lines(cars$speed, predict(cars.gb[i]), col = "red"))
+lines(cars$speed, predict(smooth.spline(cars$speed, cars$dist), cars$speed)$y, col = "green")
+ 
+### artificial example: sinus transformation
+x <- sort(runif(100)) * 10
+y <- sin(x) + rnorm(length(x), sd = 0.25)
+plot(x, y)
+### linear model
+lines(x, fitted(lm(y ~ sin(x) - 1)), col = "red")
+### GAM
+lines(x, fitted(gamboost(y ~ x, control = boost_control(mstop = 500))), col = "green")
+
+```
+
+
+```{r}
+install.packages("GAMBoost")
+# read - http://cran.r-project.org/web/packages/GAMBoost/GAMBoost.pdf
+library(GAMBoost)
+x <- matrix(runif(100*8,min=-1,max=1),100,8)
+eta <- -0.5 + 2*x[,1] + 2*x[,3]^2
+y <- rbinom(100,1,binomial()$linkinv(eta))
+##  Fit the model with smooth components
+gb1 <- GAMBoost(x,y,penalty=400,stepno=100,trace=TRUE,family=binomial())
+##  10-fold cross-validation with prediction error as a criterion
+gb1.crit <- cv.GAMBoost(x,y,penalty=400,maxstepno=100,trace=TRUE, family=binomial(), K=10,type="error",just.criterion=TRUE)
+##  Compare AIC and estimated prediction error
+which.min(gb1$AIC)
+which.min(gb1.crit$criterion)
+# do more examples
+
+```
+

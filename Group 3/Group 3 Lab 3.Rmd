@@ -1,0 +1,37 @@
+---
+title: "Group 3 Lab 3"
+output: group3_lab3
+---
+
+Lab 3 DR
+```{r}
+# https://github.com/congruili/DTDI-DataAnalysis
+# retrieve data, code, compare 2-d and 3-d MDS
+
+
+```
+
+
+Lab 3 FA
+```{r}
+data(iqitems)
+#
+data(ability)
+ability.irt <- irt.fa(ability)
+ability.scores <- score.irt(ability.irt,ability)
+
+data(attitude)
+cor(attitude)
+# Compute eigenvalues and eigenvectors of the correlation matrix.
+pfa.eigen<-eigen(cor(attitude))
+pfa.eigen$values
+    # set a value for the number of factors (for clarity)
+    factors<-2
+    # Extract and transform two components.
+    pfa.eigen$vectors [ , 1:factors ]  %*% 
++ diag ( sqrt (pfa.eigen$values [ 1:factors ] ),factors,factors )
+
+```
+
+
+
