@@ -7,9 +7,9 @@ data("USArrests")
 states = row.names(USArrests)
 states
 
-apply(USArrests,2,var)
+apply(USArrests,2,var) #thing, demension, varience
 
-
+?apply
   # We now perform principal components analysis using the 
     #prcomp() function, which is one of several functions in R that perform PCA.
   # By default, the prcomp() function centers the variables to have mean zero. By using the option scale=TRUE,
@@ -28,8 +28,8 @@ pr.out$scale
   # the corresponding principal component loading vector
   # We see that there are four distinct principal components.
 pr.out$rotation
-
-
+?pr
+?prcomp
 dim(pr.out$x)
 pr.var = pr.out$sdev^2
 pr.var
@@ -37,7 +37,8 @@ pr.var
 #compute the proportion of variance
 pve = pr.var/sum(pr.var)
 pve
-  #first PC explains 62% of the data, second 24.74%, etc.
+  
+#first PC explains 62% of the data, second 24.74%, etc.
 
 
 #----Iris Dataset----
@@ -48,7 +49,8 @@ irisdata1 <- iris[,1:4]
 irisdata1 #remove categorical
 
 principal_components <- princomp(irisdata1, cor=TRUE, score=TRUE)
-  #cor = if the calculation should use correlation or cov, correlation
+  
+#cor = if the calculation should use correlation or cov, correlation
           #is used if there are no constant variables
 
   #score = whether the score is on
